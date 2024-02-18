@@ -1,6 +1,6 @@
 # packme-wasm.go
 
-go binding for (packme-wasm)[https://github.com/adeyahya/packme-wasm] A 3D bin packing library in Rust/WebAssembly.
+go binding for [packme-wasm](https://github.com/adeyahya/packme-wasm) A 3D bin packing library in Rust/WebAssembly.
 
 ### Usage example
 
