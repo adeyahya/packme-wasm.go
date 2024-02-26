@@ -6,7 +6,7 @@ go binding for [packme-wasm](https://github.com/adeyahya/packme-wasm) A 3D bin p
 
 ```go
 func TestPacking(t *testing.T) {
-	packme := Packme{}.New("./packme.wasm")
+	packme := New()
 	input := PackmeInput{
 		Containers: []ItemInput{
 			{Id: "container 1", Qty: 1, Dim: [3]int{20, 20, 30}},

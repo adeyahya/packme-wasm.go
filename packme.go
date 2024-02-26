@@ -2,6 +2,7 @@ package packme
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"unsafe"
 
@@ -15,7 +16,11 @@ type Packme struct {
 	cached_uint8_memory []byte
 }
 
-func (p Packme) New(file_path string) Packme {
+func New() Packme {
+	return Packme{}.FromPath("./packme.wasm")
+}
+
+func (p Packme) FromPath(file_path string) Packme {
 	data, _ := ioutil.ReadFile(file_path)
 	store := wasmtime.NewStore(wasmtime.NewEngine())
 	wasm_module, _ := wasmtime.NewModule(store.Engine, data)
@@ -84,20 +89,31 @@ func (p *Packme) getStringFromWasm(ptr int32, len int32) string {
 	return string(mem[ptr : ptr+len])
 }
 
-func (p *Packme) Pack(input PackmeInput) PackmeOutput {
-	str, _ := json.Marshal(input)
+func (p *Packme) msg(inputStr string) string {
 	addToStackPointer := p.instance.GetFunc(p.store, "__wbindgen_add_to_stack_pointer")
 	freeWasm := p.instance.GetFunc(p.store, "__wbindgen_free")
-	packWasm := p.instance.GetFunc(p.store, "pack")
+	msgWasm := p.instance.GetFunc(p.store, "msg")
 	retptr, _ := addToStackPointer.Call(p.store, -16)
-	ptr0 := p.passStringToWasm(string(str))
-	packWasm.Call(p.store, retptr, ptr0, p.wasm_vector_len)
+	ptr0 := p.passStringToWasm(inputStr)
+	msgWasm.Call(p.store, retptr, ptr0, p.wasm_vector_len)
 	r0 := p.getInt32Memory()[retptr.(int32)/4+0]
 	r1 := p.getInt32Memory()[retptr.(int32)/4+1]
 	defer freeWasm.Call(p.store, r0, r1, 1)
 	defer addToStackPointer.Call(p.store, 16)
 	strResult := p.getStringFromWasm(r0, r1)
+	return strResult
+}
+
+func (p *Packme) Pack(input PackmeInput) PackmeOutput {
+	str, _ := json.Marshal(input)
+	query := fmt.Sprintf("{\"Pack\": {\"input\": %s}}", str)
+	strResult := p.msg(query)
 	var result PackmeOutput
 	json.Unmarshal([]byte(strResult), &result)
 	return result
+}
+
+func (p *Packme) Version() string {
+	strResult := p.msg("{\"Version\": {}}")
+	return strResult
 }
